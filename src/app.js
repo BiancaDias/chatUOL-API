@@ -42,3 +42,22 @@ app.get("/participants", (req, res) =>{
         .then(participant => res.send(participant))
         .catch(err => res.status(500).send(err.message));
 })
+
+app.post("/messages", (req, res) =>{
+    const from = req.header.user;
+    const {to, text, type} = req.body //validar ainda com joi
+
+    db.collection("participants").find().toArray()
+        .then((participant) => {
+            if (participant.map(p => p.name).includes(from)) {
+                db.collection("messages").insertOne({from, to, text, type,time: dayjs().format('HH:mm:ss')})
+                    .then(()=>res.sendStatus(201) ) //este é da mensagem
+                    .catch(err => res.status(500).send(err.message));
+                return res.sendStatus(201);//este é da validação
+            }
+            else{
+                return res.sendStatus(422)
+            }
+        })
+        .catch(err => res.status(500).send(err.message));
+})
