@@ -36,6 +36,9 @@ app.post("/participants", (req, res) => {
         }).catch(err => {
             return res.status(500).send(err.message)
         });
-
-
+})
+app.get("/participants", (req, res) =>{
+    db.collection("participants").find().toArray()
+        .then(participant => res.send(participant))
+        .catch(err => res.status(500).send(err.message));
 })
