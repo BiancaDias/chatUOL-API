@@ -23,7 +23,7 @@ app.post("/participants", async(req, res) => {
     const name = req.body;
     const userSchema = joi.object({name: joi.string().min(1).required()});
     const validation = userSchema.validate(name, { abortEarly: false });
-    console.log(name)
+
     if(validation.error){ //verificando se a string é vazia
         return res.sendStatus(422);
     }
@@ -43,11 +43,15 @@ app.post("/participants", async(req, res) => {
     }
         
 })
-// app.get("/participants", (req, res) =>{
-//     db.collection("participants").find().toArray()
-//         .then(participant => res.send(participant))
-//         .catch(err => res.status(500).send(err.message));
-// })
+app.get("/participants", async(req, res) =>{
+    try{
+        const participant = await db.collection("participants").find().toArray()
+        res.send(participant)
+    }
+    catch(err) {
+        res.status(500).send(err.message)
+    }
+})
 
 // app.post("/messages", (req, res) =>{
 //     const from = req.header.user;
