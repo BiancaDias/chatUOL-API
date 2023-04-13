@@ -11,14 +11,15 @@ app.use(cors());
 app.use(express.json());
 dotenv.config();
 
-let db;
 const mongoCilent = new MongoClient(process.env.DATABASE_URL);
+try{
+    await mongoCilent.connect()
+}catch(err){
+    console.log(err.message);
+}
+const db = mongoCilent.db()
 
-mongoCilent.connect()
-    .then(() => db = mongoCilent.db())
-    .catch(err => console.log(err.message));
-
-app.post("/participants", (req, res) => {
+app.post("/participants", async(req, res) => {
     const name = req.body;
     const userSchema = joi.object({name: joi.string().min(1).required()});
     const validation = userSchema.validate(name, { abortEarly: false });
@@ -27,22 +28,20 @@ app.post("/participants", (req, res) => {
         return res.sendStatus(422);
     }
     const nameOutObject = req.body.name
-    db.collection("participants").findOne({name: nameOutObject})
-        .then((data) => {
-            if(data){
-                return res.sendStatus(409) //se o nome ja existe
-            }else{
-                const participant = { name: nameOutObject, lastStatus: Date.now() };
-                db.collection("participants").insertOne(participant)
-                    .then(() => {
-                        db.collection("messages").insertOne({from: nameOutObject, to: "Todos", text: "entra na sala...", type: 'status', time: dayjs().format('HH:mm:ss')})
-                            .then(()=>res.sendStatus(201) ) //este é da mensagem
-                            .catch(err => res.sendStatus(500));
-                    })
-                    .catch(err => res.sendStatus(500));
-            }
-        })
-        .catch(err => res.sendStatus(500));
+    try{
+        const exitentParticipant = await db.collection("participants").findOne({name: nameOutObject})
+        if(exitentParticipant){
+            return res.sendStatus(409) //se o nome ja existe
+        }else{
+            const participant = { name: nameOutObject, lastStatus: Date.now() };
+            await db.collection("participants").insertOne(participant)
+            await db.collection("messages").insertOne({from: nameOutObject, to: "Todos", text: "entra na sala...", type: 'status', time: dayjs().format('HH:mm:ss')})
+            return res.sendStatus(201)
+        }
+    }catch (err){
+        res.status(500).send(err.message);
+    }
+        
 })
 // app.get("/participants", (req, res) =>{
 //     db.collection("participants").find().toArray()
