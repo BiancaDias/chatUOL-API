@@ -90,10 +90,10 @@ app.get("/messages", async (req, res) => {
     console.log(limit)
     console.log(quant)
 
-    if(quant === 0){
+    if(quant <= 0){
         return res.sendStatus(422);
     }
-    if (quant && (quant < 0 || !/^\d+$/.test(quant))) {
+    if (isNaN(Number(limit))) {
         return res.sendStatus(422);
       }
 
@@ -114,5 +114,27 @@ app.get("/messages", async (req, res) => {
         }
     } catch (err) {
         res.status(500).send(err.message)
+    }
+})
+
+app.post("/status", async (req, res) => {
+    const name = req.headers.user;
+    if(!name){
+        console.log("caiu aqui")
+        return res.sendStatus(404)
+    }
+    const lastStatus = Date.now();
+    const updateUser = {name, lastStatus}
+    try{
+        const findUser = await db.collection("participants").updateOne(
+            {name: req.headers.user},
+            {$set: updateUser}
+        )
+        if(findUser.matchedCount === 0){
+            return res.sendStatus(404)
+        }
+        res.sendStatus(200)
+    }catch(error){
+        res.sendStatus(500)
     }
 })
