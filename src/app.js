@@ -138,3 +138,23 @@ app.post("/status", async (req, res) => {
         res.sendStatus(500)
     }
 })
+
+
+setInterval(async () => {
+    try{
+        const users = await db.collection("participants").find().toArray();
+
+        const inactiveUsers = users.filter((user) => {
+            const time = Date.now();
+            const calc = time - 10000;
+            return user.lastStatus < new Date(calc);
+        });
+
+        for (const user of inactiveUsers) {
+            await db.collection("messages").insertOne({ from: user.name, to: "Todos", text:"sai da sala...", type:"status", time: dayjs().format('HH:mm:ss') })
+            await db.collection("participants").deleteOne({ _id: user._id });
+        }
+    }catch(err){
+        console.log(err)
+    }
+}, 15000)
