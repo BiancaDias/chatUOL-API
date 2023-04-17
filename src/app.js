@@ -86,9 +86,6 @@ app.get("/messages", async (req, res) => {
     const user = req.headers.user;
     const limit = req.query.limit;
     const quant = limit ? Number(limit) : null;
-    console.log(user)
-    console.log(limit)
-    console.log(quant)
 
     if(limit){
         if(quant <= 0){
@@ -122,7 +119,7 @@ app.get("/messages", async (req, res) => {
 app.post("/status", async (req, res) => {
     const name = req.headers.user;
     if(!name){
-        console.log("caiu aqui")
+        
         return res.sendStatus(404)
     }
     const lastStatus = Date.now();
@@ -141,66 +138,6 @@ app.post("/status", async (req, res) => {
     }
 })
 
-app.delete("/messages/:ID_DA_MENSAGEM", async (req, res) => {
-    const { ID_DA_MENSAGEM } = req.params;
-    const user = req.headers.user;
-
-    try{
-        const messageToBeDeleted = db.collection("messages").find( {_id: new ObjectId(ID_DA_MENSAGEM) } ).toArray();
-        if(!messageToBeDeleted){
-            return res.sendStatus(404);
-        }
-        if(messageToBeDeleted.from !== user){
-            return res.sendStatus(401)
-        }
-        await db.collection("messages").deleteOne( {_id: new ObjectId(ID_DA_MENSAGEM) } );
-        res.sendStatus(200)
-    }catch(error) {
-        res.status(500).send(error)
-    }
-})
-
-app.put(("/messages/:ID_DA_MENSAGEM"), async (req, res) => {
-    const { ID_DA_MENSAGEM } = req.params;
-    const from = req.headers.user;
-    const message = req.body;
-    const userSchema = joi.object({
-        to:joi.string().min(1).required(),
-        text: joi.string().min(1).required(),
-        type: joi.string().min(1).valid('message', 'private_message').required()
-    })
-    const validation = userSchema.validate(message, { abortEarly: false })
-    const { to, text, type } = req.body
-    
-    if (validation.error) {
-        const errors = validation.error.details.map((detail) => detail.message);
-        return res.status(422).send(errors);
-      }
-      
-      try {
-        const participant = await db.collection("participants").findOne({ name: from })
-        const message = await db.collection("messages").findOne( {_id: new ObjectId(ID_DA_MENSAGEM) } ).toArray();
-        if(!participant) {
-            return res.sendStatus(401)
-        }
-        if(!message){
-            return res.sendStatus(404)
-        }
-        const editMessage = {
-            from,
-            to,
-            text,
-            type,
-            time: message.time
-          }
-        await db.collection("messages").updateOne({_id: new ObjectId(ID_DA_MENSAGEM) },{$set: editMessage});
-        return res.sendStatus(200);
-        
-        
-    }catch(error) {
-        res.status(500).send(error)
-    }
-})
 setInterval(async () => {
     try{
         const users = await db.collection("participants").find().toArray();
