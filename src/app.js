@@ -1,7 +1,7 @@
 import express from "express"
 import cors from "cors";
 import dotenv from "dotenv"
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import dayjs from 'dayjs';
 import joi from 'joi';
 
@@ -139,6 +139,23 @@ app.post("/status", async (req, res) => {
     }
 })
 
+app.delete("/messages/:ID_DA_MENSAGEM", async (req, res) => {
+    const { ID_DA_MENSAGEM } = req.params;
+    const user = req.headers.user;
+
+    try{
+        const messageToBeDeleted = db.collection("messages").find( {_id: new ObjectId(ID_DA_MENSAGEM) } );
+        if(!messageToBeDeleted){
+            return res.sendStatus(404);
+        }
+        if(messageToBeDeleted.from !== user){
+            return res.sendStatus(401)
+        }
+        await db.collection("messages").deleteOne( {_id: new ObjectId(ID_DA_MENSAGEM) } );
+    }catch(error) {
+        res.status(500).send(error)
+    }
+})
 
 setInterval(async () => {
     try{
